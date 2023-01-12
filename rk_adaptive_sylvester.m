@@ -1,5 +1,5 @@
-function [Xu, Xv,resval] = Swapped_Sylvester_adaptive(A,B,u,v, options)
-%[Xu,Xv,resval] = Swapped_Sylvester_adaptive(A,B,u,v,options)
+function [Xu, Xv,resval] = rk_adaptive_sylvester(A,B,u,v, options)
+%[Xu,Xv,resval] = rk_adaptive_sylvester(A,B,u,v,options)
 %
 % Rational Krylov method for Sylvester equations that ensures the last pole
 % is equal to infinity at each step, to check the residual. 
@@ -47,7 +47,9 @@ function [Xu, Xv,resval] = Swapped_Sylvester_adaptive(A,B,u,v, options)
 %
 % References:
 % [1] Casulli, A, Robol, L., ...
-% [2] Druskin, Simoncini, ...
+% [2] Druskin V., Simoncini V.,Adaptive rational krylov subspaces for
+% large-scale dynamical systems. Systems & Control Letters,2011.
+
 
 if nargout==3
     resval=[];
@@ -212,15 +214,12 @@ param.extend=bs;
     G=G(:,end:-1:1);
     H(:, end-2*bs+1:end)=H(:, end-2*bs+1:end)*G;
     K(:, end-2*bs+1:end)=K(:, end-2*bs+1:end)*G;
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %Questa parte potrebbe essere migliorata usando la struttura
-    %dell'inversa di una matrice Hessenberg
+      
     e=zeros(k,bs);
     e(end-bs+1:end,end-bs+1:end)=eye(bs);
     Ap(1:end+bs,end+1:end+bs)=H(1:end-bs,1:end)*(K(1:end-bs,1:end)\e);
     Ap(end-bs+1:end,1:end)=H(end-2*bs+1:end-bs,1:end)/K(1:end-bs,1:end);
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+ 
     
     
 end
@@ -273,14 +272,7 @@ eigenvaluesB = eigenvaluesB(:);
 bs = length(eigenvaluesB) / length(poles);
 poles = kron(ones(bs, 1), poles);
 
-if isreal(eigenvaluesA)
-    %t=linspace(a,b,40*length(eigenvaluesB));
-    %t=linspace(a,b,500);
-    %ma=min(abs(a),abs(b)); Ma=max(abs(a),abs(b));
-    %t = sign(a)*logspace(log10(ma), log10(Ma), 100);
-    %[~, jx] = max(abs(ratfun(t, eigenvaluesB, poles)));
-    %np=t(jx);
-    
+if isreal(eigenvaluesA)  
     eHpoints=sort([a;b;eigenvaluesA]);
     maxvals=zeros(2,length(eHpoints)-1);
     for j=1:length(eHpoints)-1
@@ -315,20 +307,6 @@ eigenvaluesB = eigenvaluesB(:);
 bs = length(eigenvaluesB) / length(poles);
 
 if isreal(eigenvaluesA)
-    sorteig=sort(eigenvaluesB,'descend');
-    %t=linspace(a,b,40*length(eigenvaluesB));
-    %ma=min(abs(a),abs(b)); Ma=max(abs(a),abs(b));
-    %t = sign(a)*logspace(log10(ma), log10(Ma), 100);
-    %     vals=zeros(1,length(t));
-    %     for j=1:length(t)
-    %         %[~,I]=sort(t(j)-eigenvaluesB, 'descend');
-    %         %sorteig=eigenvaluesB(I);
-    %         vals(j)=abs(prod( (t(j)-poles(2:end))./(t(j)-sorteig(bs+1:bs:end)) )...
-    %             /((t(j)-sorteig(1))));
-    %     end
-    %     [~, jx] = max(vals);
-    %     np=t(jx);
-    
     eHpoints=sort([a;b;eigenvaluesA]);
     maxvals=zeros(2,length(eHpoints)-1);
     for i=1:length(eHpoints)-1
@@ -373,9 +351,6 @@ function r=ratfun(x,eH,s)
 r=zeros(size(x));
  
 for j=1:length(x)
-%r(j)=abs(prod( (x(j)-s)./(x(j)-eH) ));
-
-%to add infinity pole
 r(j)=abs(prod( (x(j)-s(2:end))./(x(j)-eH(2:end)) )/((x(j)-eH(1))));
 end
 

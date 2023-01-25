@@ -46,7 +46,8 @@ function [Xu, Xv,resval] = rk_adaptive_sylvester(A,B,u,v, options)
 %   [number of iteration A, number of iterations B, relative residual norm]
 %
 % References:
-% [1] Casulli, A, Robol, L., ...
+% [1] Casulli, A, Robol, L., An efficient block rational Krylov solver for Sylvester
+% equations with adaptive pole selection.
 % [2] Druskin V., Simoncini V.,Adaptive rational krylov subspaces for
 % large-scale dynamical systems. Systems & Control Letters,2011.
 

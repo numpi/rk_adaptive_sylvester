@@ -204,25 +204,27 @@ function [V,K,H,Ap] = Swapped_update(A,V,K,H,s, Ap)
 bs = size(H, 1) - size(H, 2);
 param.extend=bs;
 
-    [V,K,H] = rat_krylov(A,V,K,H,s,param);
-    k=size(K,2);
-    [G,K(end-2*bs+1:end,end-bs+1:end)]=qr(K(end-2*bs+1:end,end-bs+1:end));
-    G=G';
-    V(:,end-2*bs+1:end)=V(:,end-2*bs+1:end)*G';
-    H(end-2*bs+1:end,end-2*bs+1:end)=G*H(end-2*bs+1:end,end-2*bs+1:end);
-    
-    [G,~] = qr(H(end-bs+1:end, end-2*bs+1:end).');
-    G=G(:,end:-1:1);
-    H(:, end-2*bs+1:end)=H(:, end-2*bs+1:end)*G;
-    K(:, end-2*bs+1:end)=K(:, end-2*bs+1:end)*G;
-      
-    e=zeros(k,bs);
-    e(end-bs+1:end,end-bs+1:end)=eye(bs);
-    Ap(1:end+bs,end+1:end+bs)=H(1:end-bs,1:end)*(K(1:end-bs,1:end)\e);
-    Ap(end-bs+1:end,1:end)=H(end-2*bs+1:end-bs,1:end)/K(1:end-bs,1:end);
- 
-    
-    
+[V,K,H] = rat_krylov(A,V,K,H,s,param);
+k=size(K,2);
+l=1;
+
+[Q,R]=qr(K(end-(l+1)*bs+1:end,end-l*bs+1:end));
+K(end-(l+1)*bs+1:end,end-l*bs+1:end)=R;
+V(:,end-(l+1)*bs+1:end)=V(:,end-(l+1)*bs+1:end)*Q;
+H(end-(l+1)*bs+1:end,end-(l+1)*bs+1:end)=...
+    Q'*H(end-(l+1)*bs+1:end,end-(l+1)*bs+1:end);
+[Q,~]=qr(H(end:-1:end-(l+1)*bs+1,end-(l+1)*bs+1:end)');
+Q=Q(:,end:-1:1);
+H(:,end-(l+1)*bs+1:end)=H(:,end-(l+1)*bs+1:end)*Q;
+K(1:end-bs,end-(l+1)*bs+1:end)=...
+    K(1:end-bs,end-(l+1)*bs+1:end)*Q;
+
+e=zeros(k,l*bs);
+e(end-l*bs+1:end,:)=eye(l*bs);
+Ap(1:end+l*bs,end+1:end+l*bs)=...
+    H(1:end-bs,1:end)*(K(1:end-bs,1:end)\e);
+Ap(end-l*bs+1:end,1:end)=...
+    H(end-(l+1)*bs+1:end-bs,1:end)/K(1:end-bs,1:end);
 end
 
 

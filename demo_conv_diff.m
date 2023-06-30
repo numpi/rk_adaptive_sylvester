@@ -29,11 +29,11 @@ options.real=true;
 %fprintf(fileID,'&iter & residual & time (s) \n');
 %fclose(fileID);
 
-options.poles="det";
+options.poles="ADM";
 tic
-[Xu, Xv, resdet] = rk_adaptive_sylvester(A, B, U, V,options);
+[Xu, Xv, resADM] = rk_adaptive_sylvester(A, B, U, V,options);
 time(1)=toc;
-iter(1)=resdet(end,1);
+iter(1)=resADM(end,1);
 residual(1)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
 
 % To save data of timings, uncomment the following lines
@@ -42,15 +42,15 @@ residual(1)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
 %fclose(fileID);
 
 % To save data for the residuals, un comment the following line
-%dlmwrite('example2_det.dat',resdet,'\t');
+%dlmwrite('example2_ADM.dat',resADM,'\t');
 
 
 
-options.poles="det2";
+options.poles="sADM";
 tic
-[Xu, Xv, resdet2] = rk_adaptive_sylvester(A, B, U, V, options);
+[Xu, Xv, ressADM] = rk_adaptive_sylvester(A, B, U, V, options);
 time(2)=toc;
-iter(2)=resdet2(end,1);
+iter(2)=ressADM(end,1);
 residual(2)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
 
 % To save data of timings, uncomment the following lines
@@ -59,7 +59,7 @@ residual(2)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
 %fclose(fileID);
 
 % To save data for the residuals, un comment the following line
-%dlmwrite('example2_det2.dat',resdet2,'\t');
+%dlmwrite('example2_sADM.dat',ressADM,'\t');
 
 tic
 options.poles="ext";
@@ -76,9 +76,9 @@ residual(3)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
 %fprintf(fileID,' ext & $%i$ & $%.2e$ & $%.2f$ \n',iter(3), residual(3) ,time(3));
 %fclose(fileID);
 
-semilogy(max(resdet(:,1),resdet(:,2)),resdet(:,3),'b-');
+semilogy(max(resADM(:,1),resADM(:,2)),resADM(:,3),'b-');
 hold on
-semilogy(max(resdet2(:,1),resdet2(:,2)),resdet2(:,3), 'r-');
+semilogy(max(ressADM(:,1),ressADM(:,2)),ressADM(:,3), 'r-');
 hold on
 semilogy(max(resext(:,1),resext(:,2)),resext(:,3),'k-');
 legend('ADM', 'sADM','extended')

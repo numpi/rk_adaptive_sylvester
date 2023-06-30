@@ -25,10 +25,10 @@ function [Xu, Xv,resval] = rk_adaptive_sylvester(A, B, u, v, options)
 %                 || u  v'||_F
 %
 %  options.poles determines how to adaptively chose poles. The possible
-%  choices are options.poles='det', options.poles='det2', default is 'det2'
+%  choices are options.poles='ADM', options.poles='sADM', default is 'sADM'
 %
 %  The pole selection algorithm are described in detail in [1]. Algorithm
-%  'det' is the heuristic proposed in [2].
+%  'ADM' is the heuristic proposed in [2].
 %
 %
 %  options.mA, option.MA determines a lower and upper bound, respectively, for
@@ -72,7 +72,7 @@ end
 maxit=options.maxit;
 
 if isfield(options, 'poles')==0
-    options.poles="det2";
+    options.poles="sADM";
 end
 
 normUV=norm(u*v','fro');
@@ -160,12 +160,12 @@ while k<=maxit && h<=maxit
 
     Y = QA * Xp * QB';
 
-    if options.poles=="det"
-        snewA = newpole_adaptive_det(mB,MB,diag(TB),diag(TA),sA);
-        snewB = newpole_adaptive_det(mA,MA,diag(TA),diag(TB),sB);
-    elseif options.poles=="det2"
-        snewA = newpole_adaptive_det2(mB,MB,diag(TB),diag(TA),sA);
-        snewB = newpole_adaptive_det2(mA,MA,diag(TA),diag(TB),sB);
+    if options.poles=="ADM"
+        snewA = newpole_adaptive_ADM(mB,MB,diag(TB),diag(TA),sA);
+        snewB = newpole_adaptive_ADM(mA,MA,diag(TA),diag(TB),sB);
+    elseif options.poles=="sADM"
+        snewA = newpole_adaptive_sADM(mB,MB,diag(TB),diag(TA),sA);
+        snewB = newpole_adaptive_sADM(mA,MA,diag(TA),diag(TB),sB);
     elseif options.poles=="ext"
         if snewA == inf
             snewA = 0;
@@ -270,7 +270,7 @@ Ap(end-l*bs+1:end,1:end)=...
     H(end-(l+1)*bs+1:end-bs,1:end)/K(1:end-bs,1:end);
 end
 
-function np = newpole_adaptive_det(a,b,eigenvaluesA,eigenvaluesB, poles)
+function np = newpole_adaptive_ADM(a,b,eigenvaluesA,eigenvaluesB, poles)
 %Computes the newpole for rational Krylov method maximizing the determinant.
 
 poles = poles(:);
@@ -305,7 +305,7 @@ end
 end
 
 
-function np = newpole_adaptive_det2(a,b,eigenvaluesA, eigenvaluesB, poles)
+function np = newpole_adaptive_sADM(a,b,eigenvaluesA, eigenvaluesB, poles)
 %Computes the newpole for rational Krylov method maximizing the product
 %of a selected set of eigenvalues.
 

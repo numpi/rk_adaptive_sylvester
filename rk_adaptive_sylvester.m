@@ -1,11 +1,11 @@
-function [Xu, Xv,resval] = rk_adaptive_sylvester(A,B,u,v, options)
-%[Xu,Xv,resval] = rk_adaptive_sylvester(A,B,u,v,options)
+function [Xu, Xv,resval] = rk_adaptive_sylvester(A, B, u, v, options)
+%[Xu,Xv,resval] = rk_adaptive_sylvester(A, B, u, v, options)
 %
 % Rational Krylov method for Sylvester equations that ensures the last pole
-% is equal to infinity at each step, to check the residual. 
+% is equal to infinity at each step, to check the residual.
 %
 % The function solves the Sylvester equation
-% 
+%
 %    A X - X B - u v' = 0
 %
 % assuming sep(A,B) >0
@@ -13,7 +13,7 @@ function [Xu, Xv,resval] = rk_adaptive_sylvester(A,B,u,v, options)
 %Input parameters:
 %  A, B, square matrices of dimension nA x nA and nB x nB, respectively;
 %  u,v block vectors of dimension nA x bs and nB x bs, respectively;
-% 
+%
 %  options.maxit = max space dimension, defalut min(sqrt(size(A)),sqrt(size(B)));
 %
 %  options.tol = max final accuracy (in terms of relative residual),
@@ -46,11 +46,13 @@ function [Xu, Xv,resval] = rk_adaptive_sylvester(A,B,u,v, options)
 %   [number of iteration A, number of iterations B, relative residual norm]
 %
 % References:
-% [1] Casulli, A, Robol, L., An efficient block rational Krylov solver for Sylvester
-% equations with adaptive pole selection.
-% [2] Druskin V., Simoncini V.,Adaptive rational krylov subspaces for
-% large-scale dynamical systems. Systems & Control Letters,2011.
+% [1] Casulli, A, Robol, L., ...
+% [2] Druskin, Simoncini, ...
 
+if ~exist('rat_krylov', 'file')
+    error('RKTOOLBOX not found, please download it from ' + ... 
+        'http://guettel.com/rktoolbox/');
+end
 
 if nargout==3
     resval=[];
@@ -84,51 +86,60 @@ Bp=HB(1:bs,1:bs)/KB(1:bs,1:bs);
 
 C=(VA(:,1:bs)'*u)*(VB(:,1:bs)'*v)';
 
-if isfield(options, 'mA')==0
-    options.mA=eigs(A,1,'smallestreal');
-end
-mA=options.mA;
-if isfield(options, 'MA')==0
-    options.MA=eigs(A,1,'largestreal');
-end
-MA=options.MA;
+if options.poles=="ext"
+    snewA=0;
+    snewB=0;
+    sA=snewA;
+    sB=snewB;
+else    
+    if isfield(options, 'MA')==0
+        options.MA=eigs(A,1,'SM', 'Maxiterations',1e5);
+    end
+    MA=options.MA;
+    if isfield(options, 'mA')==0
+        options.mA=sign(options.MA) * normest(A);
+    end
+    mA=options.mA;
 
-if isfield(options, 'mB')==0
-    options.mB=eigs(B,1,'smallestreal');
-end
-mB=options.mB;
-if isfield(options, 'MB')==0
-    options.MB=eigs(B,1,'largestreal');
-end
-MB=options.MB;
+    if isfield(options, 'mB')==0
+        options.mB=eigs(B,1,'SM', 'Maxiterations',1e5);
+    end
+    mB=options.mB;
+    if isfield(options, 'MB')==0
+        options.MB=sign(options.mB) * normest(B);
+    end
+    MB=options.MB;
 
-if abs(MB)<abs(mB)
-    snewA=MB;
-else
-    snewA=mB;
+
+    if abs(MB)<abs(mB)
+        snewA=MB;
+    else
+        snewA=mB;
+    end
+
+    if ~isreal(snewA)
+        snewA=[snewA,conj(snewA)];
+    end
+
+    if abs(MA)<abs(mA)
+        snewB=MA;
+    else
+        snewB=mA;
+    end
+
+    if ~isreal(snewB)
+        snewB=[snewB,conj(snewB)];
+    end
+
+    sA=[MB+mB-snewA(1),snewA];
+    sB=[MA+mA-snewB(1),snewB];
 end
 
-if ~isreal(snewA)
-snewA=[snewA,conj(snewA)];
-end
-
-if abs(MA)<abs(mA)
-    snewB=MA;
-else
-    snewB=mA;
-end
-
-if ~isreal(snewB)
-snewB=[snewB,conj(snewB)];
-end
-
-sA=[MB+mB-snewA(1),snewA];
-sB=[MA+mA-snewB(1),snewB];
 k=1;
 h=1;
 while k<=maxit && h<=maxit
-        k=k+1;
-        h=h+1;
+    k=k+1;
+    h=h+1;
     if options.real
         [VA,KA,HA,Ap] = Swapped_update_real(A,VA,KA,HA,snewA, Ap);
         [VB,KB,HB,Bp] = Swapped_update_real(B',VB,KB,HB,snewB, Bp);
@@ -140,23 +151,29 @@ while k<=maxit && h<=maxit
         [VB,KB,HB,Bp] = Swapped_update(B',VB,KB,HB,snewB, Bp);
         C(end+bs,end+bs)=0;
     end
-    
-    
+
+
     [QA,TA]=schur(Ap, 'complex');
     [QB,TB]=schur(Bp, 'complex');
-    
+
     Xp = matlab.internal.math.sylvester_tri(TA, -TB, QA' * C * QB, 'I', 'I', 'transp');
-    
+
     Y = QA * Xp * QB';
-    
+
     if options.poles=="det"
         snewA = newpole_adaptive_det(mB,MB,diag(TB),diag(TA),sA);
         snewB = newpole_adaptive_det(mA,MA,diag(TA),diag(TB),sB);
     elseif options.poles=="det2"
         snewA = newpole_adaptive_det2(mB,MB,diag(TB),diag(TA),sA);
         snewB = newpole_adaptive_det2(mA,MA,diag(TA),diag(TB),sB);
+    elseif options.poles=="ext"
+        if snewA == inf
+            snewA = 0;
+        else
+            snewA = inf;
+        end
     end
-    
+
     if options.real
         if ~isreal(snewA)
             snewA(2)=conj(snewA);
@@ -165,19 +182,13 @@ while k<=maxit && h<=maxit
             snewB(2)=conj(snewB);
         end
     end
-    
+
     sA = [sA, snewA];
     sB = [sB, snewB];
-    
-    
-    
+
     resA = norm( ( HA(end-bs+1:end, :) / KA(1:end-bs, :) ) * Y , 'fro');
     resB = norm( ( HB(end-bs+1:end, :) / KB(1:end-bs, :) ) * Y' , 'fro');
-    
-    % 2-norm
-    %resnrm = max(resA, resB);
-    %fprintf('Iteration %d, res = %e\n', k, resnrm);
-    
+
     %Frobenius norm
     resnrm = hypot(resA, resB)/normUV;
     fprintf('IterationA %d,IterationB %d, res = %e\n',k,h, resnrm);
@@ -259,45 +270,8 @@ Ap(end-l*bs+1:end,1:end)=...
     H(end-(l+1)*bs+1:end-bs,1:end)/K(1:end-bs,1:end);
 end
 
-%function [V,K,H,Ap] = Swapped_update_real(A,V,K,H,s, Ap)
-%Step of rational Krylov method to add the pole s (and its conjugate if s
-%is not real), and swap poles ensuring that that the last pole
-% is equal to infinity.
-
-%bs = size(H, 1) - size(H, 2);
-%param.extend=bs;
-%param.real=1;
-
-%    [V,K,H] = rat_krylov(A,V,K,H,s,param);
-%    k=size(K,2);
-    
-%    for i=length(s):-1:1
-%    [G,~]...
-%        =qr(K(end-(i-1)*bs-2*bs+1:end-(i-1)*bs,end-(i-1)*bs-bs+1:end-(i-1)*bs));
-%    G=G';
-%    V(:,end-(i-1)*bs-2*bs+1:end-(i-1)*bs)=V(:,end-(i-1)*bs-2*bs+1:end-(i-1)*bs)*G';
-%    K(end-(i-1)*bs-2*bs+1:end-(i-1)*bs,end-(i-1)*bs-2*bs+1:end)...
-%        =G*K(end-(i-1)*bs-2*bs+1:end-(i-1)*bs,end-(i-1)*bs-2*bs+1:end);
-%    H(end-(i-1)*bs-2*bs+1:end-(i-1)*bs,end-(i-1)*bs-2*bs+1:end)...
-%        =G*H(end-(i-1)*bs-2*bs+1:end-(i-1)*bs,end-(i-1)*bs-2*bs+1:end);
-    
-%    [G,~] = qr(H(end-(i-1)*bs-bs+1:end-(i-1)*bs, end-(i-1)*bs-2*bs+1:end-(i-1)*bs).');
-%    G=G(:,end:-1:1);
-%    H(:, end-(i-1)*bs-2*bs+1:end-(i-1)*bs)=H(:, end-(i-1)*bs-2*bs+1:end-(i-1)*bs)*G;
-%    K(:, end-(i-1)*bs-2*bs+1:end-(i-1)*bs)=K(:, end-(i-1)*bs-2*bs+1:end-(i-1)*bs)*G;
-
-%    e=zeros(k-(i-1)*bs,bs);
-%    e(end-bs+1:end,:)=eye(bs);
-%    Ap(1:end+bs,end+1:end+bs)=...
-%        H(1:end-(i-1)*bs-bs,1:end-(i-1)*bs)*(K(1:end-(i-1)*bs-bs,1:end-(i-1)*bs)\e);
-%    Ap(end-bs+1:end,1:end)=...
-%        H(end-(i-1)*bs-2*bs+1:end-(i-1)*bs-bs,1:end-(i-1)*bs)/K(1:end-(i-1)*bs-bs,1:end-(i-1)*bs);
-%    end
-%end
-
-
 function np = newpole_adaptive_det(a,b,eigenvaluesA,eigenvaluesB, poles)
-%Computes the newpole for rational Krylov method maximizing the determinant. 
+%Computes the newpole for rational Krylov method maximizing the determinant.
 
 poles = poles(:);
 
@@ -306,13 +280,13 @@ eigenvaluesB = eigenvaluesB(:);
 bs = length(eigenvaluesB) / length(poles);
 poles = kron(ones(bs, 1), poles);
 
-if isreal(eigenvaluesA)  
+if isreal(eigenvaluesA)
     eHpoints=sort([a;b;eigenvaluesA]);
     maxvals=zeros(2,length(eHpoints)-1);
     for j=1:length(eHpoints)-1
-    t=linspace(eHpoints(j),eHpoints(j+1),20);
-    [maxvals(1,j),jx]= max(abs(ratfun(t, eigenvaluesB, poles)));
-    maxvals(2,j)=t(jx);
+        t=linspace(eHpoints(j),eHpoints(j+1),20);
+        [maxvals(1,j),jx]= max(abs(ratfun(t, eigenvaluesB, poles)));
+        maxvals(2,j)=t(jx);
     end
     [~,jx]=max(maxvals(1,:));
     np=maxvals(2,jx);
@@ -321,7 +295,7 @@ else
     k = convhull(real(x),imag(x));
     maxvals=zeros(2,length(k)-1);
     for i=1:length(k)-1
-        t=linspace(x(k(i)),x(k(i+1)),500);
+        t=linspace(x(k(i)),x(k(i+1)),20);
         [maxvals(1,i),jx] =max(abs(ratfun(t, eigenvaluesB, poles)));
         maxvals(2,i)=t(jx);
     end
@@ -333,7 +307,7 @@ end
 
 function np = newpole_adaptive_det2(a,b,eigenvaluesA, eigenvaluesB, poles)
 %Computes the newpole for rational Krylov method maximizing the product
-%of a selected set of eigenvalues. 
+%of a selected set of eigenvalues.
 
 poles = poles(:);
 
@@ -357,13 +331,13 @@ if isreal(eigenvaluesA)
     end
     [~,jx]=max(maxvals(1,:));
     np=maxvals(2,jx);
-    
+
 else
     x=[eigenvaluesA;a;b];
     k = convhull(real(x),imag(x));
     maxvals=zeros(2,length(k)-1);
     for i=1:length(k)-1
-        t=linspace(x(k(i)),x(k(i+1)),500);
+        t=linspace(x(k(i)),x(k(i+1)),20);
         vals=zeros(1,length(t));
         for j=1:length(t)
             [~,I]=sort(abs(t(j)-eigenvaluesB), 'ascend');
@@ -383,9 +357,9 @@ end
 function r=ratfun(x,eH,s)
 
 r=zeros(size(x));
- 
+
 for j=1:length(x)
-r(j)=abs(prod( (x(j)-s(2:end))./(x(j)-eH(2:end)) )/((x(j)-eH(1))));
+    r(j)=abs(prod( (x(j)-s(2:end))./(x(j)-eH(2:end)) )/((x(j)-eH(1))));
 end
 
 return

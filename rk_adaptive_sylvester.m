@@ -214,6 +214,7 @@ function [V,K,H,Ap] = Swapped_update(A,V,K,H,s, Ap)
 
 bs = size(H, 1) - size(H, 2);
 param.extend=bs;
+param.deflation_tol=0;
 
 [V,K,H] = rat_krylov(A,V,K,H,s,param);
 k=size(K,2);
@@ -246,6 +247,7 @@ function [V,K,H,Ap] = Swapped_update_real(A,V,K,H,s, Ap)
 
 bs = size(H, 1) - size(H, 2);
 param.extend=bs;
+param.deflation_tol=0;
 param.real=1;
 [V,K,H] = rat_krylov(A,V,K,H,s,param);
 k=size(K,2);

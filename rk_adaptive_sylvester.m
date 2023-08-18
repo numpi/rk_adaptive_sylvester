@@ -50,7 +50,7 @@ function [Xu, Xv,resval] = rk_adaptive_sylvester(A, B, u, v, options)
 % [2] Druskin, Simoncini, ...
 
 if ~exist('rat_krylov', 'file')
-    error('RKTOOLBOX not found, please download it from ' + ... 
+    error('RKTOOLBOX not found, please download it from ', ... 
         'http://guettel.com/rktoolbox/');
 end
 
@@ -192,11 +192,11 @@ while k<=maxit && h<=maxit
     %Frobenius norm
     resnrm = hypot(resA, resB)/normUV;
     fprintf('IterationA %d,IterationB %d, res = %e\n',k,h, resnrm);
-    if resnrm<options.tol
-        break
-    end
     if nargout==3
         resval=[resval;[k,h,resnrm]];
+    end
+    if resnrm<options.tol
+        break
     end
 end
 if k>= maxit

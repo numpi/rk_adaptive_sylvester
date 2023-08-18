@@ -3,7 +3,7 @@ n = 2^12;
 k = 201; % Maxit
 
 if ~exist('rat_krylov', 'file')
-    error('RKTOOLBOX not found, please download it from ' + ... 
+    error('RKTOOLBOX not found, please download it from ', ... 
         'http://guettel.com/rktoolbox/');
 end
 
@@ -34,7 +34,7 @@ tic
 [Xu, Xv, resADM] = rk_adaptive_sylvester(A, B, U, V,options);
 time(1)=toc;
 iter(1)=resADM(end,1);
-residual(1)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
+residual(1)=resADM(end,end);
 
 % To save data of timings, uncomment the following lines
 %fileID = fopen(str,'a');
@@ -51,7 +51,7 @@ tic
 [Xu, Xv, ressADM] = rk_adaptive_sylvester(A, B, U, V, options);
 time(2)=toc;
 iter(2)=ressADM(end,1);
-residual(2)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
+residual(2)=ressADM(end,end);
 
 % To save data of timings, uncomment the following lines
 %fileID = fopen(str,'a');
@@ -66,7 +66,7 @@ options.poles="ext";
 [Xu, Xv, resext] = rk_adaptive_sylvester(A, B, U, V, options);
 time(3)=toc;
 iter(3)=resext(end,1);
-residual(3)=norm(A*Xu*Xv'-Xu*Xv'*B-U*V', 'fro')/norm(U*V', 'fro');
+residual(3)=resext(end,end);
 
 % To save data for the residuals, un comment the following line
 %dlmwrite('example2_ext.dat',resext,'\t');

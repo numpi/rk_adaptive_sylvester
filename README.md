@@ -12,5 +12,5 @@ The algorithm computes rational Krylov subspaces using the rktoolbox described i
 
 [1]. Casulli, A. & Robol, L., [An effcient block rational Krylov solver for Sylvester equations with adaptive pole selection](https://arxiv.org/abs/2301.08103), arXiv.
 
-[2]. Berljafa, M. & S. Elsworth, S. &  Guttel, S., [A rational Krylov toolbox for Matlab (2014)](https://guettel.com/rktoolbox/download.html).
+[2]. Berljafa, M. & S. Elsworth, S. &  Guttel, S., [A rational Krylov toolbox for Matlab (2014)](http://guettel.com/rktoolbox/).
 
